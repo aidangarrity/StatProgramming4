@@ -1,7 +1,41 @@
+## Aidan Garrity (s1997567), Eleni Michaelidou (s2226022)
 
+## Address of Githup repo: https://github.com/aidangarrity/StatProgramming4.git
+
+## Brief description of what each team member contributed to the project:
+
+## Proportion of the work was undertaken by each team member: 
+## Aidan Garrity: 
+## Eleni Michaelidou:
+
+
+## ------------------------- Overview of the code ------------------------------
+
+
+## -----------------------------------------------------------------------------
 
 newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
                  fscale=1,maxit=100,max.half=20,eps=1e-6) {
+## Function for ...
+## Inputs: theta: a vector of initial values for the optimization parameters.
+##         func: the objective function to minimize.
+##         grad: the gradient function.
+##         hess(NULL by default): the Hessian matrix function (if not supplied
+##                                then an approximation to the Hessian by finite
+##                                differencing of the gradient vector is obtained).
+##         toll(1e-8 by default): the the convergence tolerance.
+##         fscale(1 by default): a rough estimate of the magnitude of func near the optimum.
+##         maxit(100 by default): the maximum number of Newton iterations to try before giving up.
+##         max.half(20 by default): the maximum number of times a step should be
+##                                  halved before concluding that the step has
+##                                  failed to improve the objective.
+##         eps(1e-6 by default): the finite difference intervals to use when a
+##                                Hessian function is not provided.
+## Output: a list containing: f: the value of the objective function at the minimum.
+##                            theta: the value of the parameters at the minimum.
+##                            iter: the number of iterations taken to reach the minimum.
+##                            g: the gradient vector at the minimum.
+##                            Hi: the inverse of the Hessian matrix at the minimum.
   
   # approximate the hessian using the gradient if not provided
   if(is.null(hess)){
@@ -36,7 +70,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
               the maximum number of halvings.")
     }
     
-    # Check if we are done, the opimization is within the tolerance
+    # Check if we are done, the optimization is within the tolerance
     if (all(abs(grad(theta_k,...)) < tol * (abs(func(theta_k, ...)) + fscale)) ){
       num_ter <- iter
       break
@@ -62,7 +96,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
               'g'=grad(theta_k, ...), 'Hi'=solve(hess(theta_k, ...)))
   
   
-}
+} ## newt
 
 rb <- function(th,k=2) {
   k*(th[2]-th[1]^2)^2 + (1-th[1])^2
