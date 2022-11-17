@@ -80,8 +80,8 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     }
     
     # Check if we are done, the optimization is within the tolerance
-    if (all(abs(grad(theta_k,...)) < tol * (abs(func(theta_k, ...)) + fscale)) ){
-      num_ter <- iter # number of iterations taken to reach the minimum
+    if (all(abs(grad(theta_k,...)) < tol * (abs(func(theta_k, ...)) + fscale))){
+      num_iter <- iter # number of iterations taken to reach the minimum
       break
     }
     
@@ -95,6 +95,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
   # At this point, the optimizer should have converged.
   # if we haven't yet converged, warn the user
   if (all(abs(grad(theta_k,...)) >= tol * (abs(func(theta_k, ...)) + fscale))){
+    num_iter <- maxit
     warning("The optimzer has not converged despite reaching the maximum 
             number of iterations.")
   }
@@ -120,3 +121,5 @@ hb <- function(th,k=2) {
   h[1,2] <- h[2,1] <- -4*k*th[1]
   h
 }
+
+print(newt(c(0,0), rb, gb, hb, 2))
