@@ -37,18 +37,18 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
 ##                            g: the gradient vector at the minimum.
 ##                            Hi: the inverse of the Hessian matrix at the minimum.
   
-  ## approximate the hessian using the gradient if not provided
+  # approximate the hessian using the gradient if not provided
   if(is.null(hess)){
-    grad_0 <- grad(theta, ...) ## compute the gradient vector with the initial parameters
-    n <- length(theta) ## length of the parameter vector (n = # of parameters)
-    hess <- matrix(0, n, n) ## finite difference Hessian (dimensions: n x n)
-    for (i in 1:n){ ## loop over parameters
-      theta_1 <- theta; theta_1[i] <- theta_1[i] + eps ## increase theta by eps
-      grad_1 <- grad(theta_1, ...) ## recompute the gradient vector with the perturbed parameters
-      hess[i,] <- (grad_1 - grad_0)/ eps ## approximate second derivatives
+    grad_0 <- grad(theta, ...) # compute the gradient vector with the initial parameters
+    n <- length(theta) # length of the parameter vector (n = # of parameters)
+    hess <- matrix(0, n, n) # finite difference Hessian (dimensions: n x n)
+    for (i in 1:n){ # loop over parameters
+      theta_1 <- theta; theta_1[i] <- theta_1[i] + eps # increase theta by eps
+      grad_1 <- grad(theta_1, ...) # recompute the gradient vector with the perturbed parameters
+      hess[i,] <- (grad_1 - grad_0)/ eps # approximate second derivatives
     }
     
-    hess <- (t(hess) + hess) / 2 ## making the hess matrix symmetric
+    hess <- (t(hess) + hess) / 2 # making the hess matrix symmetric
   }
   
   # Ensure all initial values are finite
@@ -66,7 +66,16 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     stepsize <- 1.0
     for (step in 1:max.half){
       # estimate new parameters that would decrease the objective function
-      theta_k1 <- theta_k - stepsize* (solve(hess(theta_k, ...)) %*% grad(theta_k, ...))
+      
+      # step = - inv(Hessian matrix) %*% gradient vector
+      # - Hessian matrix * step = gradient vector
+      
+      # solve with Cholesky
+      # compute Cholesky factor of Hessian matrix
+      R <- chol(hess(theta_k, ...)) # avoid computing twice
+      theta_k1 <- theta_k - stepsize * backsolve(R, forwardsolve(t(R), grad(theta_k, ...)))
+      
+      #theta_k1 <- theta_k - stepsize* (solve(hess(theta_k, ...)) %*% grad(theta_k, ...))
       
       # if we went to far, halve step size
       if (func(theta_k1,...) >= func(theta_k,...)){
@@ -101,9 +110,15 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
   }
   
   try(chol(hess(theta_k, ...)))
+  
+  # Check if the Hessian is positive definite at convergence.
+  # if not warn the user.
+  if (min(eigen(hess(theta_k, ...))$values) <= 0){
+    warning("The Hessian is not positive definite at convergence.")
+  }
 
   out <- list('f'=func(theta_k, ...),'theta'=theta_k, 'iter'=num_iter,
-              'g'=grad(theta_k, ...), 'Hi'=solve(hess(theta_k, ...)))
+              'g'=grad(theta_k, ...), 'Hi'=chol2inv(chol(hess(theta_k, ...))))
   
   
 } ## newt
