@@ -38,23 +38,27 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
 ##                            Hi: the inverse of the Hessian matrix at the minimum.
   
   ## approximate the hessian using the gradient if not provided
-  if(is.null(hess)){
-    grad_0 <- grad(theta, ...) ## compute the gradient vector with the initial parameters
-    n <- length(theta) ## length of the parameter vector (n = # of parameters)
-    hess <- matrix(0, n, n) ## finite difference Hessian (dimensions: n x n)
-    for (i in 1:n){ ## loop over parameters
-      theta_1 <- theta; theta_1[i] <- theta_1[i] + eps ## increase theta by eps
-      grad_1 <- grad(theta_1, ...) ## recompute the gradient vector with the perturbed parameters
-      hess[i,] <- (grad_1 - grad_0)/ eps ## approximate second derivatives
+  if(is.null(hess)) {
+    hess <- function(theta){
+      grad_0 <- grad(theta, ...) ## compute the gradient vector with the initial parameters
+      n <- length(theta) ## length of the parameter vector (n = # of parameters)
+      hessian <- matrix(0, n, n) ## finite difference Hessian (dimensions: n x n)
+      for (i in 1:n){ ## loop over parameters
+        theta_1 <- theta; theta_1[i] <- theta_1[i] + eps ## increase theta by eps
+        grad_1 <- grad(theta_1, ...) ## recompute the gradient vector with the perturbed parameters
+        hessian[i,] <- (grad_1 - grad_0)/ eps ## approximate second derivatives
+      }
+      hessian <- (t(hessian) + hessian) / 2 ## making the hess matrix symmetric
+      return(hessian)
     }
     
-    hess <- (t(hess) + hess) / 2 ## making the hess matrix symmetric
   }
   
   # Ensure all initial values are finite
   if (any(is.infinite(func(theta,...))) |
       any(is.infinite(grad(theta,...))) |
-      any(is.infinite(hess(theta,...)))){
+      any(is.infinite(hess(theta,...)))
+      ){
     stop("The function or its derivates are not finite at the initial parameters.")
   }
   
@@ -66,10 +70,10 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     stepsize <- 1.0
     for (step in 1:max.half){
       # estimate new parameters that would decrease the objective function
-      theta_k1 <- theta_k - stepsize* (solve(hess(theta_k, ...)) %*% grad(theta_k, ...))
+      theta_k1 <- theta_k - stepsize* (chol2inv(chol(hess(theta_k, ...))) %*% grad(theta_k, ...))
       
-      # if we went to far, halve step size
-      if (func(theta_k1,...) >= func(theta_k,...)){
+      # if we went too far or the function is infinite, halve step size
+      if (func(theta_k1,...) >= func(theta_k,...) | is.infinite(func(theta_k1, ...))){
         stepsize <- stepsize / 2
       }
     }
@@ -80,30 +84,33 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     }
     
     # Check if we are done, the optimization is within the tolerance
-    if (all(abs(grad(theta_k,...)) < tol * (abs(func(theta_k, ...)) + fscale))){
+    if (all(abs(grad(theta_k1,...)) < tol * (abs(func(theta_k1, ...)) + fscale))){
+      theta_k <- theta_k1
       num_iter <- iter # number of iterations taken to reach the minimum
       break
     }
     
     # move on to new step
-    else{
-      theta_k <- theta_k1
-    }
-    
+    theta_k <- theta_k1
   }
   
   # At this point, the optimizer should have converged.
   # if we haven't yet converged, warn the user
   if (all(abs(grad(theta_k,...)) >= tol * (abs(func(theta_k, ...)) + fscale))){
     num_iter <- maxit
-    warning("The optimzer has not converged despite reaching the maximum 
+    warning("The optimizer has not converged despite reaching the maximum 
             number of iterations.")
   }
   
-  try(chol(hess(theta_k, ...)))
+  tryCatch(
+    expr = {chol(hess(theta_k,...))} ,
+    error = function(e){
+      message("The Hessian is not positive definite at convergence.")
+    }
+  )
 
   out <- list('f'=func(theta_k, ...),'theta'=theta_k, 'iter'=num_iter,
-              'g'=grad(theta_k, ...), 'Hi'=solve(hess(theta_k, ...)))
+              'g'=grad(theta_k, ...), 'Hi'=chol2inv(chol(hess(theta_k, ...))))
   
   
 } ## newt
@@ -121,5 +128,22 @@ hb <- function(th,k=2) {
   h[1,2] <- h[2,1] <- -4*k*th[1]
   h
 }
+print(newt(c(2,-2), rb, gb, hb, 2))
 
-print(newt(c(0,0), rb, gb, hb, 2))
+
+ra <- function(th){
+  2*th[1]^2 + th[2]^2-4 + 6*th[2] - 7*th[1]
+}
+ga <- function(th){
+  c(4*th[1]-7, 2*th[2]+6)
+}
+ha <- function(th){
+  h <- matrix(0,2,2)
+  h[1,1] <- 4
+  h[2,2] <- 2
+  h[1,2] <- 0
+  h[2,1] <- 0
+  h
+}
+
+print(newt(c(100,100), ra,ga,ha))
