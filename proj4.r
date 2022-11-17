@@ -11,12 +11,22 @@
 
 ## ------------------------- Overview of the code ------------------------------
 
+## Code to create a function to optimize a given objective function w.r.t. some 
+## parameters based on the Newton's method. The basic idea of the Newton's method
+## is that we start with a guess of the optimization parameter values, and then,
+## we evaluate the function and its first (gradient vector) and second derivative
+## (Hessian matrix) w.r.t. the parameters at the guess. We use these to obtain
+## a quadratic approximation to the objective function. We optimize this approximation,
+## and then use it as the parameters for the next guess and approximation for the 
+## objective function.
+## That process is repeated to convergence. More specifically, convergence is
+## achieved when the gradient is approximately zero.
 
 ## -----------------------------------------------------------------------------
 
 newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
                  fscale=1,maxit=100,max.half=20,eps=1e-6) {
-## Function for ...
+## Function implementing Newton's method.
 ## Inputs: theta: a vector of initial values for the optimization parameters.
 ##         func: the objective function to minimize.
 ##         grad: the gradient function.
@@ -70,8 +80,8 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     # Checking that the Hessian is positive definite and perturbing it to be so f it isn't
     H <- hess(theta_k, ...)
     posdef <- FALSE
-    # Initializing multiple of identity matrix to be added to the Hessian
-    I <- diag(ncol(H))
+    # Multiple of identity matrix scaled to the order of the Hessian, used to perturb Hessian
+    I <- diag(ncol(H)) * mean(diag(H))
     k <- 0
     while(!posdef){
       if (k>10){
@@ -133,7 +143,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
             number of iterations.")
   }
   
-
+  # Check if the Hessian is positive definite at convergence. if not warn the user
   tryCatch(
     expr = {chol(hess(theta_k,...))} ,
     error = function(e){
@@ -141,19 +151,14 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     }
   )
 
-  
-  # Check if the Hessian is positive definite at convergence.
-  # if not warn the user.
-  # if (min(eigen(hess(theta_k, ...))$values) <= 0){
-  #   warning("The Hessian is not positive definite at convergence.")
-  # }
-
-
+  # Constructing output list
   out <- list('f'=func(theta_k, ...),'theta'=theta_k, 'iter'=num_iter,
               'g'=grad(theta_k, ...), 'Hi'=chol2inv(chol(hess(theta_k, ...))))
   
   
 } ## newt
+
+## End of code
 
 rb <- function(th,k=2) {
   k*(th[2]-th[1]^2)^2 + (1-th[1])^2
@@ -168,7 +173,7 @@ hb <- function(th,k=2) {
   h[1,2] <- h[2,1] <- -4*k*th[1]
   h
 }
-print(newt(c(2,-2), rb, gb, hb, 2))
+print(newt(c(2,-2), rb, gb,hb,2))
 
 
 ra <- function(th){
@@ -180,7 +185,7 @@ ga <- function(th){
 ha <- function(th){
   h <- matrix(0,2,2)
   h[1,1] <- 4
-  h[2,2] <- 2
+  h[2,2] <- -2
   h[1,2] <- 0
   h[2,1] <- 0
   h
