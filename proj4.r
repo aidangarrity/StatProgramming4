@@ -2,11 +2,9 @@
 
 ## Address of Githup repo: https://github.com/aidangarrity/StatProgramming4.git
 
-## Brief description of what each team member contributed to the project:
-
 ## Proportion of the work was undertaken by each team member: 
-## Aidan Garrity: 
-## Eleni Michaelidou:
+## Aidan Garrity: Optimization step, error handling, testing
+## Eleni Michaelidou: Hessian approximation, robustness checks, testing
 
 
 ## ------------------------- Overview of the code ------------------------------
@@ -28,12 +26,13 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
                  fscale=1,maxit=100,max.half=20,eps=1e-6) {
 ## Function implementing Newton's method.
 ## Inputs: theta: a vector of initial values for the optimization parameters.
+##                the first argument of func, grad, and hess.
 ##         func: the objective function to minimize.
 ##         grad: the gradient function.
 ##         hess(NULL by default): the Hessian matrix function (if not supplied
 ##                                then an approximation to the Hessian by finite
 ##                                differencing of the gradient vector is obtained).
-##         toll(1e-8 by default): the the convergence tolerance.
+##         toll(1e-8 by default): the convergence tolerance.
 ##         fscale(1 by default): a rough estimate of the magnitude of func near the optimum.
 ##         maxit(100 by default): the maximum number of Newton iterations to try before giving up.
 ##         max.half(20 by default): the maximum number of times a step should be
@@ -73,12 +72,12 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
   }
   
   
-  # x_k+1 = x_k - [f''(x_k)]^-1 %*% f'(x_k)
   theta_k <- theta
   for (iter in 1:maxit) { # loop over the number of Newton iterations to try 
     
     # Checking that the Hessian is positive definite and perturbing it to be so f it isn't
     H <- hess(theta_k, ...)
+    # flag if the hessian is positive definite
     posdef <- FALSE
     # Multiple of identity matrix scaled to the order of the Hessian, used to perturb Hessian
     I <- diag(ncol(H)) * mean(diag(H))
@@ -160,37 +159,5 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
 
 ## End of code
 
-rb <- function(th,k=2) {
-  k*(th[2]-th[1]^2)^2 + (1-th[1])^2
-}
-gb <- function(th,k=2) {
-  c(-2*(1-th[1])-k*4*th[1]*(th[2]-th[1]^2),k*2*(th[2]-th[1]^2))
-}
-hb <- function(th,k=2) {
-  h <- matrix(0,2,2)
-  h[1,1] <- 2-k*2*(2*(th[2]-th[1]^2) - 4*th[1]^2)
-  h[2,2] <- 2*k
-  h[1,2] <- h[2,1] <- -4*k*th[1]
-  h
-}
-print(newt(c(2,-2), rb, gb,hb,2))
-
-
-ra <- function(th){
-  2*th[1]^2 + th[2]^2-4 + 6*th[2] - 7*th[1]
-}
-ga <- function(th){
-  c(4*th[1]-7, 2*th[2]+6)
-}
-ha <- function(th){
-  h <- matrix(0,2,2)
-  h[1,1] <- 4
-  h[2,2] <- -2
-  h[1,2] <- 0
-  h[2,1] <- 0
-  h
-}
-
-print(newt(c(100,100), ra,ga))
 
 
