@@ -37,9 +37,18 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
 ##                            g: the gradient vector at the minimum.
 ##                            Hi: the inverse of the Hessian matrix at the minimum.
   
-  # approximate the hessian using the gradient if not provided
+  ## approximate the hessian using the gradient if not provided
   if(is.null(hess)){
+    grad_0 <- grad(theta, ...) ## compute the gradient vector with the initial parameters
+    n <- length(theta) ## length of the parameter vector (n = # of parameters)
+    hess <- matrix(0, n, n) ## finite difference Hessian (dimensions: n x n)
+    for (i in 1:n){ ## loop over parameters
+      theta_1 <- theta; theta_1[i] <- theta_1[i] + eps ## increase theta by eps
+      grad_1 <- grad(theta_1, ...) ## recompute the gradient vector with the perturbed parameters
+      hess[i,] <- (grad_1 - grad_0)/ eps ## approximate second derivatives
+    }
     
+    hess <- (t(hess) + hess) / 2 ## making the hess matrix symmetric
   }
   
   # Ensure all initial values are finite
@@ -52,7 +61,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
   
   # x_k+1 = x_k - [f''(x_k)]^-1 %*% f'(x_k)
   theta_k <- theta
-  for (iter in 1:maxit) {
+  for (iter in 1:maxit) { # loop over the number of Newton iterations to try 
     
     stepsize <- 1.0
     for (step in 1:max.half){
@@ -72,7 +81,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     
     # Check if we are done, the optimization is within the tolerance
     if (all(abs(grad(theta_k,...)) < tol * (abs(func(theta_k, ...)) + fscale)) ){
-      num_ter <- iter
+      num_ter <- iter # number of iterations taken to reach the minimum
       break
     }
     
@@ -83,7 +92,7 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     
   }
   
-  # At this point, the opimizer should have converged.
+  # At this point, the optimizer should have converged.
   # if we haven't yet converged, warn the user
   if (all(abs(grad(theta_k,...)) >= tol * (abs(func(theta_k, ...)) + fscale))){
     warning("The optimzer has not converged despite reaching the maximum 
