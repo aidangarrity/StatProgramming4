@@ -106,10 +106,6 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
     i <- 0 # initialize counter for number of trials to perturb the hessian matrix
     multiple <- 0 # Initialize multiple (set = 0 to check if the initial hessian matrix is positive definite)
     
-    # # Multiple of identity matrix scaled to the order of the Hessian, used to perturb Hessian
-    # I <- diag(ncol(H)) * mean(diag(H))
-    # k <- 0
-    
     while(!posdef){
       
       if (i>10){
@@ -142,23 +138,6 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
       
       i <- i + 1 # increase counter
 
-      # if (k>10){
-      #   # Give up if not successfully perturbed
-      #   stop("Could not perturb H to be positive definite.")
-      # }
-      # # Try cholesky decomposition, will succeed if positive definite.
-      # error <- try(chol(H + (10^k)*I),silent=TRUE)
-      # # Checks to see if the cholesky decomposition failed
-      # if (inherits(error, "try-error")){
-      #   k <- k+1
-      # }
-      # else{
-      #   posdef <- TRUE
-      #   # If the initial hessian matrix is positive definite, k=0 and it stays the same.
-      #   # Otherwise we add a multiple of the identity that makes it positive definite.
-      #   H <- H + (10^k)*I
-      # }
-      
     }
     
     stepsize <- 1.0 # Initial step size
@@ -202,14 +181,6 @@ newt <- function(theta,func,grad,hess=NULL,...,tol=1e-8,
             number of iterations.")
   }
   
-  # # Check if the Hessian is positive definite at convergence. if not warn the user
-  # tryCatch(
-  #   expr = {chol(hess(theta_k,...))} ,
-  #   error = function(e){
-  #     message("The Hessian is not positive definite at convergence.")
-  #   }
-  # )
-  # 
   # Check if the Hessian is positive definite at convergence. if not warn the user.
   if (min(eigen(hess(theta_k, ...))$values) <= 0){
     warning("The Hessian is not positive definite at convergence and therefore its inverse is not provided.")
